@@ -3,605 +3,553 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>넘버블럭스 뱀게임 🔢🐍</title>
+<title>넘버블럭스 뱀게임 🔢</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-  body {
-    background: radial-gradient(ellipse at top, #1a0a3e 0%, #0a1a2e 60%, #000a1a 100%);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 12px 8px 20px;
-    font-family: "Arial Rounded MT Bold", "Comic Sans MS", Arial, sans-serif;
-    overflow-x: hidden;
-    user-select: none;
-  }
-
-  /* stars background */
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    background-image:
-      radial-gradient(1px 1px at 10% 15%, white 0%, transparent 100%),
-      radial-gradient(1px 1px at 25% 40%, white 0%, transparent 100%),
-      radial-gradient(1px 1px at 50% 10%, white 0%, transparent 100%),
-      radial-gradient(1px 1px at 70% 30%, white 0%, transparent 100%),
-      radial-gradient(1px 1px at 85% 60%, white 0%, transparent 100%),
-      radial-gradient(1px 1px at 40% 80%, white 0%, transparent 100%),
-      radial-gradient(1px 1px at 90% 5%,  white 0%, transparent 100%),
-      radial-gradient(1px 1px at 5%  70%, white 0%, transparent 100%),
-      radial-gradient(1.5px 1.5px at 60% 55%, rgba(255,220,100,0.8) 0%, transparent 100%),
-      radial-gradient(1.5px 1.5px at 30% 90%, rgba(255,220,100,0.8) 0%, transparent 100%);
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  h1 {
-    color: #FFD700;
-    font-size: clamp(1.3rem, 5vw, 2rem);
-    text-shadow: 0 0 20px #FFD70099, 0 2px 4px #0008;
-    margin-bottom: 8px;
-    z-index: 1;
-    letter-spacing: 1px;
-  }
-
-  .top-bar {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 8px;
-    z-index: 1;
-  }
-
-  .badge {
-    background: rgba(255,255,255,0.12);
-    border: 1.5px solid rgba(255,255,255,0.2);
-    border-radius: 20px;
-    padding: 5px 16px;
-    color: white;
-    font-size: 1rem;
-    font-weight: bold;
-  }
-
-  .badge.gold { background: rgba(255,215,0,0.15); border-color: #FFD700; color: #FFD700; }
-
-  #nb-status {
-    z-index: 1;
-    border-radius: 16px;
-    padding: 6px 22px;
-    font-size: 1.05rem;
-    font-weight: bold;
-    margin-bottom: 10px;
-    transition: background 0.4s, border-color 0.4s, color 0.4s;
-    border: 2px solid #FF3333;
-    color: #FF3333;
-    background: rgba(255,51,51,0.15);
-  }
-
-  .canvas-wrap {
-    position: relative;
-    border-radius: 14px;
-    overflow: hidden;
-    border: 4px solid #FFD700;
-    box-shadow: 0 0 40px #FFD70055, 0 0 0 1px #AA990044;
-    z-index: 1;
-  }
-
-  canvas {
-    display: block;
-    width: min(95vw, 540px);
-    height: min(95vw, 540px);
-  }
-
-  /* overlay */
-  #overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,10,0.82);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
-    transition: opacity 0.3s;
-  }
-
-  #overlay.hidden { display: none; }
-
-  .ov-emoji { font-size: 3.5rem; }
-
-  .ov-title {
-    font-size: clamp(1.4rem, 5vw, 2rem);
-    text-align: center;
-    text-shadow: 0 0 16px currentColor;
-  }
-
-  .ov-sub { color: #ccc; font-size: 1rem; text-align: center; padding: 0 24px; line-height: 1.6; }
-
-  #start-btn {
-    background: linear-gradient(135deg, #FFD700, #FF9900);
-    color: #222;
-    border: none;
-    border-radius: 32px;
-    padding: 14px 44px;
-    font-size: 1.4rem;
-    font-weight: bold;
-    cursor: pointer;
-    font-family: inherit;
-    box-shadow: 0 4px 24px #FFD70066;
-    transition: transform 0.12s, box-shadow 0.12s;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  #start-btn:hover  { transform: scale(1.06); box-shadow: 0 6px 30px #FFD70099; }
-  #start-btn:active { transform: scale(0.97); }
-
-  /* D-pad */
-  .dpad {
-    display: grid;
-    grid-template-areas: ". up ." "left center right" ". down .";
-    gap: 8px;
-    margin-top: 14px;
-    z-index: 1;
-  }
-
-  .dpad-btn {
-    width: 64px; height: 64px;
-    background: rgba(255,255,255,0.1);
-    border: 2px solid rgba(255,255,255,0.25);
-    border-radius: 14px;
-    font-size: 1.9rem;
-    color: white;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: background 0.1s, transform 0.1s;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .dpad-btn:active { background: rgba(255,255,255,0.25); transform: scale(0.93); }
-
-  .dpad-center { grid-area: center; pointer-events: none; }
-
-  .hint { color: #555; font-size: 0.82rem; margin-top: 6px; z-index: 1; }
-
-  /* particle canvas overlay */
-  #particles { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  justify-content:flex-start;padding:10px 8px 20px;
+  background:radial-gradient(ellipse at 30% 20%,#1e0a44 0%,#0a1530 50%,#000a18 100%);
+  font-family:"Arial Rounded MT Bold","Comic Sans MS",Arial,sans-serif;
+  overflow-x:hidden;user-select:none;color:white;
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    radial-gradient(1.5px 1.5px at 12% 18%,#ffffc0 0%,transparent 100%),
+    radial-gradient(1px   1px   at 34%  8%,white    0%,transparent 100%),
+    radial-gradient(1.5px 1.5px at 56% 14%,white   0%,transparent 100%),
+    radial-gradient(1px   1px   at 73% 32%,#ffffc0 0%,transparent 100%),
+    radial-gradient(1px   1px   at 89% 11%,white    0%,transparent 100%),
+    radial-gradient(1px   1px   at  7% 63%,#ffffc0 0%,transparent 100%),
+    radial-gradient(1px   1px   at 45% 74%,white    0%,transparent 100%),
+    radial-gradient(1.5px 1.5px at 92% 79%,#ffffc0 0%,transparent 100%),
+    radial-gradient(1px   1px   at 26% 87%,white    0%,transparent 100%),
+    radial-gradient(1px   1px   at 63% 93%,white    0%,transparent 100%);
+}
+h1{font-size:clamp(1.2rem,5vw,1.9rem);color:#FFD700;text-shadow:0 0 18px #FFD70077;
+   margin-bottom:7px;z-index:1;letter-spacing:1px;}
+.topbar{display:flex;gap:10px;margin-bottom:7px;z-index:1;align-items:center;flex-wrap:wrap;justify-content:center;}
+.pill{background:rgba(255,255,255,0.10);border:1.5px solid rgba(255,255,255,0.18);
+      border-radius:20px;padding:4px 14px;font-size:0.9rem;font-weight:bold;}
+.pill.gold{background:rgba(255,215,0,0.14);border-color:#FFD700;color:#FFD700;}
+#nblabel{z-index:1;font-size:0.95rem;font-weight:bold;padding:4px 18px;border-radius:20px;
+         border:2px solid #FF3333;color:#FF3333;background:rgba(255,51,51,0.11);
+         margin-bottom:8px;transition:all .35s ease;white-space:nowrap;}
+.wrap{position:relative;border-radius:14px;overflow:hidden;
+      border:4px solid #FFD700;box-shadow:0 0 38px #FFD70044,0 0 70px #7744FF1A;z-index:1;}
+canvas{display:block;}
+#pc{position:absolute;inset:0;pointer-events:none;}
+/* overlay */
+#ov{position:absolute;inset:0;background:rgba(0,0,14,.84);display:flex;
+    flex-direction:column;align-items:center;justify-content:center;gap:12px;border-radius:10px;}
+#ov.hidden{display:none;}
+.ov-icon{font-size:3.8rem;}
+.ov-title{font-size:clamp(1.3rem,4vw,1.9rem);text-align:center;}
+.ov-desc{font-size:.92rem;color:#bbb;text-align:center;padding:0 18px;line-height:1.65;}
+.bigbtn{background:linear-gradient(135deg,#FFD700,#FF9900);color:#1a1000;border:none;
+        border-radius:30px;padding:12px 40px;font-size:1.3rem;font-weight:bold;
+        font-family:inherit;cursor:pointer;box-shadow:0 4px 18px #FFD70055;
+        transition:transform .12s,box-shadow .12s;}
+.bigbtn:hover{transform:scale(1.06);box-shadow:0 6px 28px #FFD70088;}
+.bigbtn:active{transform:scale(.95);}
+/* bottom controls */
+.btmrow{display:flex;gap:10px;margin-top:11px;z-index:1;flex-wrap:wrap;
+        justify-content:center;align-items:center;}
+.rbtn{background:rgba(255,80,80,.16);border:1.5px solid rgba(255,100,100,.35);
+      color:#FF9999;border-radius:18px;padding:6px 16px;font-size:.88rem;
+      font-family:inherit;cursor:pointer;transition:background .15s,transform .1s;}
+.rbtn:hover{background:rgba(255,80,80,.28);}
+.rbtn:active{transform:scale(.93);}
+.spgrp{display:flex;gap:5px;align-items:center;}
+.splbl{font-size:.82rem;color:#777;}
+.spbtn{background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.16);
+       color:#aaa;border-radius:15px;padding:5px 12px;font-size:.85rem;
+       font-family:inherit;cursor:pointer;transition:all .14s;}
+.spbtn.on{background:rgba(100,210,255,.2);border-color:#55BBFF;color:#88DDFF;}
+.spbtn:active{transform:scale(.9);}
+/* dpad */
+.dpad{display:grid;grid-template-areas:". U ." "L . R" ". D .";gap:7px;
+      margin-top:9px;z-index:1;}
+.dp{width:58px;height:58px;background:rgba(255,255,255,.09);
+    border:2px solid rgba(255,255,255,.17);border-radius:13px;font-size:1.7rem;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:background .09s,transform .07s;touch-action:none;}
+.dp:active{background:rgba(255,255,255,.23);transform:scale(.9);}
+.hint{color:#444;font-size:.76rem;margin-top:5px;z-index:1;}
 </style>
 </head>
 <body>
 
 <h1>🔢 넘버블럭스 뱀게임 🐍</h1>
 
-<div class="top-bar">
-  <div class="badge">점수: <span id="score-disp">0</span></div>
-  <div class="badge gold">최고: <span id="best-disp">0</span></div>
+<div class="topbar">
+  <div class="pill">점수 <span id="sv">0</span></div>
+  <div class="pill gold">최고 <span id="bv">0</span></div>
 </div>
 
-<div id="nb-status">넘버블럭 1 (하나)이에요!</div>
+<div id="nblabel">넘버블럭 1 (하나)이에요!</div>
 
-<div class="canvas-wrap">
-  <canvas id="game"></canvas>
-  <canvas id="particles"></canvas>
+<div class="wrap" id="wrap">
+  <canvas id="gc"></canvas>
+  <canvas id="pc"></canvas>
+  <div id="ov">
+    <div class="ov-icon" id="oi">🔢</div>
+    <div class="ov-title" id="ot" style="color:#FFD700">넘버블럭스 뱀게임!</div>
+    <div class="ov-desc"  id="od">숫자 음식을 먹어서 넘버블럭을 키워요!<br>먹을수록 숫자가 커져요 🎉</div>
+    <button class="bigbtn" id="startbtn" onclick="startGame()">시작하기! 🎮</button>
+  </div>
+</div>
 
-  <div id="overlay">
-    <div class="ov-emoji" id="ov-emoji">🐍</div>
-    <div class="ov-title" id="ov-title" style="color:#FFD700">넘버블럭스 뱀게임!</div>
-    <div class="ov-sub" id="ov-sub">숫자 음식을 먹어서<br>넘버블럭을 키워요! 🎉</div>
-    <button id="start-btn" onclick="startGame()">시작하기! 🎮</button>
+<div class="btmrow">
+  <button class="rbtn" onclick="restartGame()">🔄 다시하기</button>
+  <div class="spgrp">
+    <span class="splbl">속도</span>
+    <button class="spbtn on"  id="sp0" onclick="setSpd(480)">🐌 느림</button>
+    <button class="spbtn"     id="sp1" onclick="setSpd(300)">🐢 보통</button>
+    <button class="spbtn"     id="sp2" onclick="setSpd(160)">🐇 빠름</button>
   </div>
 </div>
 
 <div class="dpad">
-  <button class="dpad-btn" style="grid-area:up"    onpointerdown="pressDir(0,-1)">⬆️</button>
-  <button class="dpad-btn" style="grid-area:left"  onpointerdown="pressDir(-1,0)">⬅️</button>
-  <div class="dpad-center"></div>
-  <button class="dpad-btn" style="grid-area:right" onpointerdown="pressDir(1,0)">➡️</button>
-  <button class="dpad-btn" style="grid-area:down"  onpointerdown="pressDir(0,1)">⬇️</button>
+  <button class="dp" style="grid-area:U" onpointerdown="inp(0,-1)">⬆️</button>
+  <button class="dp" style="grid-area:L" onpointerdown="inp(-1,0)">⬅️</button>
+  <button class="dp" style="grid-area:R" onpointerdown="inp(1,0)">➡️</button>
+  <button class="dp" style="grid-area:D" onpointerdown="inp(0,1)">⬇️</button>
 </div>
-
-<div class="hint">방향키 또는 화면 버튼 또는 스와이프로 조종하세요</div>
+<div class="hint">키보드 방향키 · 화면 버튼 · 스와이프로 조종</div>
 
 <script>
-// ─── constants ───────────────────────────────────────────────
-const GRID  = 15;
-const SPEED = 290; // ms per tick (slow for kids)
+// ── Numberblocks data ──────────────────────────────────────
+const GRID = 14;
 
-const NB = {
-  1:  { color:"#FF3333", dark:"#AA0000", light:"#FFAAAA", name:"하나" },
-  2:  { color:"#FF8800", dark:"#BB5500", light:"#FFCC88", name:"둘"   },
-  3:  { color:"#FFD700", dark:"#AA8800", light:"#FFF0AA", name:"셋"   },
-  4:  { color:"#33BB33", dark:"#116611", light:"#99EE99", name:"넷"   },
-  5:  { color:"#4455EE", dark:"#1122AA", light:"#AABBFF", name:"다섯" },
-  6:  { color:"#9933CC", dark:"#660099", light:"#CC99EE", name:"여섯" },
-  7:  { color:"#FF3399", dark:"#BB0066", light:"#FF99CC", name:"일곱" },
-  8:  { color:"#FF9900", dark:"#BB6600", light:"#FFCC66", name:"여덟" },
-  9:  { color:"#00AADD", dark:"#006699", light:"#88DDFF", name:"아홉" },
-  10: { color:"#FF5533", dark:"#CC2200", light:"#FFAA99", name:"열"   },
-};
+const BLK = [
+  null,
+  {c:'#EE2222',dk:'#991100',lt:'#FFAAAA',name:'하나'},   // 1 red
+  {c:'#FF8800',dk:'#BB5500',lt:'#FFDDAA',name:'둘'},     // 2 orange
+  {c:'#FFD700',dk:'#AA8800',lt:'#FFF4AA',name:'셋'},     // 3 yellow
+  {c:'#33BB33',dk:'#117711',lt:'#AAFFAA',name:'넷'},     // 4 green
+  {c:'#3355EE',dk:'#1122AA',lt:'#AABBFF',name:'다섯'},   // 5 blue
+  {c:'#9922BB',dk:'#660088',lt:'#DDAAFF',name:'여섯'},   // 6 purple
+  {c:'#EE1188',dk:'#AA0055',lt:'#FFAAD4',name:'일곱'},   // 7 pink
+  {c:'#FFAA00',dk:'#BB7700',lt:'#FFEAAA',name:'여덟'},   // 8 amber
+  {c:'#00AABB',dk:'#006677',lt:'#AAEEFF',name:'아홉'},   // 9 cyan
+  {c:'#FF6633',dk:'#BB3300',lt:'#FFCCAA',name:'열'},     // 10 orange-red
+];
+function blk(n){ return BLK[((n-1)%10)+1]; }
 
-function nb(n) { return NB[((n - 1) % 10) + 1]; }
+// ── Canvas setup ───────────────────────────────────────────
+const gc  = document.getElementById('gc');
+const pc  = document.getElementById('pc');
+const ctx = gc.getContext('2d');
+const ptx = pc.getContext('2d');
 
-// ─── canvas setup ────────────────────────────────────────────
-const gc  = document.getElementById("game");
-const pc  = document.getElementById("particles");
-const ctx = gc.getContext("2d");
-const ptx = pc.getContext("2d");
+function C(){ return gc.width / GRID; }
 
-function resize() {
-  const size = Math.min(window.innerWidth * 0.95, 540);
-  const cell = Math.floor(size / GRID);
-  gc.width  = pc.width  = cell * GRID;
-  gc.height = pc.height = cell * GRID;
-  gc.style.width  = pc.style.width  = cell * GRID + "px";
-  gc.style.height = pc.style.height = cell * GRID + "px";
+function resize(){
+  const W = Math.min(window.innerWidth * 0.95, 560);
+  const cell = Math.floor(W / GRID);
+  const side = cell * GRID;
+  gc.width = pc.width = gc.height = pc.height = side;
+  gc.style.width = pc.style.width = gc.style.height = pc.style.height = side+'px';
 }
 resize();
-window.addEventListener("resize", () => { resize(); if (!running) drawIdle(); });
+window.addEventListener('resize', resize);
 
-function CELL() { return gc.width / GRID; }
-
-// ─── game state ──────────────────────────────────────────────
-let snake, dir, nextDir, food, score, best = 0;
-let running = false, ticker = null, rafId = null;
-
-// ─── particles ───────────────────────────────────────────────
-let particles = [];
-
-function spawnParticles(cx, cy, color) {
-  for (let i = 0; i < 18; i++) {
-    const angle = (Math.PI * 2 * i) / 18 + Math.random() * 0.3;
-    const speed = 2 + Math.random() * 4;
-    particles.push({
-      x: cx, y: cy,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      life: 1,
-      size: 4 + Math.random() * 5,
-      color,
-    });
-  }
-}
-
-function updateParticles() {
-  ptx.clearRect(0, 0, pc.width, pc.height);
-  particles = particles.filter(p => p.life > 0);
-  for (const p of particles) {
-    p.x  += p.vx; p.y += p.vy;
-    p.vy += 0.15;
-    p.life -= 0.032;
-    ptx.globalAlpha = Math.max(0, p.life);
-    ptx.fillStyle = p.color;
-    ptx.beginPath();
-    ptx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
-    ptx.fill();
-  }
-  ptx.globalAlpha = 1;
-}
-
-// ─── sound (Web Audio API) ───────────────────────────────────
-let audioCtx = null;
-function getAudio() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  return audioCtx;
-}
-
-function playEat(num) {
-  try {
-    const a = getAudio();
-    const osc = a.createOscillator();
-    const gain = a.createGain();
-    osc.connect(gain); gain.connect(a.destination);
-    const base = 220 * Math.pow(2, ((num - 1) % 12) / 12);
-    osc.frequency.setValueAtTime(base, a.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(base * 2, a.currentTime + 0.15);
-    gain.gain.setValueAtTime(0.3, a.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, a.currentTime + 0.3);
-    osc.type = "triangle";
-    osc.start(); osc.stop(a.currentTime + 0.3);
-  } catch(e) {}
-}
-
-function playDie() {
-  try {
-    const a = getAudio();
-    const osc = a.createOscillator();
-    const gain = a.createGain();
-    osc.connect(gain); gain.connect(a.destination);
-    osc.frequency.setValueAtTime(300, a.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(60, a.currentTime + 0.5);
-    gain.gain.setValueAtTime(0.3, a.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, a.currentTime + 0.5);
-    osc.type = "sawtooth";
-    osc.start(); osc.stop(a.currentTime + 0.5);
-  } catch(e) {}
-}
-
-// ─── drawing helpers ─────────────────────────────────────────
-function rr(cx, x, y, w, h, r) {
+// ── Drawing helpers ────────────────────────────────────────
+function rr(cx, x, y, w, h, r){
+  const R = Math.min(r, w/2, h/2);
   cx.beginPath();
-  cx.moveTo(x+r,y);
-  cx.lineTo(x+w-r,y); cx.quadraticCurveTo(x+w,y,x+w,y+r);
-  cx.lineTo(x+w,y+h-r); cx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-  cx.lineTo(x+r,y+h); cx.quadraticCurveTo(x,y+h,x,y+h-r);
-  cx.lineTo(x,y+r); cx.quadraticCurveTo(x,y,x+r,y);
+  cx.moveTo(x+R,y);
+  cx.lineTo(x+w-R,y);   cx.arcTo(x+w,y,  x+w,y+R,  R);
+  cx.lineTo(x+w,y+h-R); cx.arcTo(x+w,y+h,x+w-R,y+h,R);
+  cx.lineTo(x+R,y+h);   cx.arcTo(x,y+h,  x,y+h-R,  R);
+  cx.lineTo(x,y+R);     cx.arcTo(x,y,    x+R,y,    R);
   cx.closePath();
 }
 
-function drawBg() {
-  const C = CELL();
-  const g = ctx.createLinearGradient(0,0,gc.width,gc.height);
-  g.addColorStop(0,"#0d1b2a"); g.addColorStop(1,"#1a0a2e");
-  ctx.fillStyle = g;
-  ctx.fillRect(0,0,gc.width,gc.height);
-  ctx.strokeStyle = "rgba(255,255,255,0.035)";
-  ctx.lineWidth = 1;
-  for (let i = 0; i <= GRID; i++) {
-    ctx.beginPath(); ctx.moveTo(i*C,0); ctx.lineTo(i*C,gc.height); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,i*C); ctx.lineTo(gc.width,i*C); ctx.stroke();
+function drawBg(){
+  const s = gc.width;
+  const g = ctx.createLinearGradient(0,0,s,s);
+  g.addColorStop(0,'#0e1828'); g.addColorStop(1,'#190830');
+  ctx.fillStyle = g; ctx.fillRect(0,0,s,s);
+  const cell = C();
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 1;
+  for(let i=0;i<=GRID;i++){
+    ctx.beginPath(); ctx.moveTo(i*cell,0); ctx.lineTo(i*cell,s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,i*cell); ctx.lineTo(s,i*cell); ctx.stroke();
   }
 }
 
-function drawBlock(x, y, num, isHead, dirObj, alpha) {
-  const C = CELL();
-  const data = nb(num);
-  const px = x * C, py = y * C;
-  const pad = isHead ? 2 : 4;
-  const r   = isHead ? 10 : 7;
-
-  ctx.globalAlpha = alpha ?? 1;
-  ctx.shadowColor = data.color;
-  ctx.shadowBlur  = isHead ? 14 : 0;
-
-  // main face
-  ctx.fillStyle   = data.color;
-  ctx.strokeStyle = data.dark;
-  ctx.lineWidth   = isHead ? 3 : 2;
-  rr(ctx, px+pad, py+pad, C-pad*2, C-pad*2, r);
-  ctx.fill(); ctx.stroke();
-
-  ctx.shadowBlur = 0;
-
-  if (isHead) {
-    // shine
-    ctx.fillStyle = data.light + "44";
-    rr(ctx, px+pad+4, py+pad+4, C-pad*2-8, (C-pad*2)*0.38, 5);
-    ctx.fill();
-
-    // number
-    ctx.fillStyle   = "white";
-    ctx.strokeStyle = data.dark;
-    ctx.lineWidth   = 3;
-    ctx.font        = `bold ${Math.round(C * 0.42)}px "Arial Rounded MT Bold", Arial`;
-    ctx.textAlign   = "center";
-    ctx.textBaseline = "middle";
-    ctx.strokeText(String(num), px + C/2, py + C/2 + 2);
-    ctx.fillText  (String(num), px + C/2, py + C/2 + 2);
-
-    // eyes
-    const ew = C * 0.12, eh = C * 0.16;
-    let e1, e2;
-    const d = dirObj;
-    if      (d.x===1)  { e1=[px+C*0.78,py+C*0.28]; e2=[px+C*0.78,py+C*0.62]; }
-    else if (d.x===-1) { e1=[px+C*0.22,py+C*0.28]; e2=[px+C*0.22,py+C*0.62]; }
-    else if (d.y===-1) { e1=[px+C*0.28,py+C*0.22]; e2=[px+C*0.62,py+C*0.22]; }
-    else               { e1=[px+C*0.28,py+C*0.78]; e2=[px+C*0.62,py+C*0.78]; }
-
-    const horiz = (d.y !== 0);
-    for (const [ex,ey] of [e1,e2]) {
-      ctx.fillStyle   = "white";
-      ctx.strokeStyle = "#222";
-      ctx.lineWidth   = 1;
-      ctx.beginPath();
-      ctx.ellipse(ex, ey, horiz ? eh : ew, horiz ? ew : eh, 0, 0, Math.PI*2);
-      ctx.fill(); ctx.stroke();
-      ctx.fillStyle = "#111";
-      ctx.beginPath(); ctx.arc(ex, ey, ew*0.58, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = "white";
-      ctx.beginPath(); ctx.arc(ex+ew*0.2, ey-eh*0.2, ew*0.22, 0, Math.PI*2); ctx.fill();
-    }
-  } else {
-    // body dot
-    ctx.fillStyle = "rgba(255,255,255,0.18)";
-    ctx.beginPath(); ctx.arc(px+C/2, py+C/2, C*0.1, 0, Math.PI*2); ctx.fill();
-  }
-
-  ctx.globalAlpha = 1;
-}
-
-function drawFood(fx, fy, nextNum) {
-  const C = CELL();
-  const data = nb(nextNum);
-  const px = fx*C, py = fy*C;
-  const t = Date.now()/400;
-  const pulse = 1 + Math.sin(t) * 0.09;
-  const s = C * 0.73 * pulse;
-  const off = (C - s) / 2;
-
-  ctx.shadowColor = data.color;
-  ctx.shadowBlur  = 22;
-  ctx.fillStyle   = data.color;
-  ctx.strokeStyle = data.dark;
-  ctx.lineWidth   = 2;
-  rr(ctx, px+off, py+off, s, s, 9);
-  ctx.fill(); ctx.stroke();
-  ctx.shadowBlur = 0;
-
-  // shine
-  ctx.fillStyle = data.light + "55";
-  rr(ctx, px+off+3, py+off+3, s-6, s*0.36, 5);
+// Draw a Numberblocks-style block face
+function drawNBBlock(px, py, sz, b, radius){
+  // Main colored block
+  ctx.fillStyle = b.c;
+  rr(ctx, px, py, sz, sz, radius);
   ctx.fill();
 
-  // number
-  ctx.fillStyle   = "white";
-  ctx.strokeStyle = data.dark;
-  ctx.lineWidth   = 2.5;
-  ctx.font        = `bold ${Math.round(C*0.38)}px "Arial Rounded MT Bold", Arial`;
-  ctx.textAlign   = "center";
-  ctx.textBaseline = "middle";
-  ctx.strokeText(String(nextNum), px+C/2, py+C/2);
-  ctx.fillText  (String(nextNum), px+C/2, py+C/2);
+  // Top-left shine (gives 3-D feel)
+  const shine = ctx.createLinearGradient(px, py, px+sz*0.65, py+sz*0.65);
+  shine.addColorStop(0, 'rgba(255,255,255,0.42)');
+  shine.addColorStop(0.55,'rgba(255,255,255,0.06)');
+  shine.addColorStop(1,  'rgba(255,255,255,0)');
+  ctx.fillStyle = shine;
+  rr(ctx, px, py, sz, sz, radius);
+  ctx.fill();
+
+  // Bottom-right dark edge (3-D depth)
+  ctx.fillStyle = b.dk+'88';
+  rr(ctx, px, py+sz*0.78, sz, sz*0.22, Math.min(radius, sz*0.11));
+  ctx.fill();
+
+  // Outline
+  ctx.strokeStyle = b.dk;
+  ctx.lineWidth = 2;
+  rr(ctx, px, py, sz, sz, radius);
+  ctx.stroke();
+}
+
+// Rectangular Numberblocks eyes — the key visual signature
+function drawNBEyes(ox, oy, cellSz, dir){
+  // eye half-dims (portrait when facing L/R, landscape when facing U/D)
+  const ew = cellSz * 0.12;
+  const eh = cellSz * 0.20;
+
+  let p1, p2, w, h;
+  if(dir.x===1){       // →  eyes on right side, stacked vertically
+    p1={x:ox+cellSz*0.82,y:oy+cellSz*0.30}; p2={x:ox+cellSz*0.82,y:oy+cellSz*0.64};
+    w=ew; h=eh;
+  } else if(dir.x===-1){ // ←  eyes on left side
+    p1={x:ox+cellSz*0.18,y:oy+cellSz*0.30}; p2={x:ox+cellSz*0.18,y:oy+cellSz*0.64};
+    w=ew; h=eh;
+  } else if(dir.y===-1){ // ↑  eyes on top, side by side (landscape)
+    p1={x:ox+cellSz*0.28,y:oy+cellSz*0.18}; p2={x:ox+cellSz*0.65,y:oy+cellSz*0.18};
+    w=eh; h=ew;
+  } else {              // ↓  eyes on bottom, side by side
+    p1={x:ox+cellSz*0.28,y:oy+cellSz*0.82}; p2={x:ox+cellSz*0.65,y:oy+cellSz*0.82};
+    w=eh; h=ew;
+  }
+
+  for(const ep of [p1,p2]){
+    // white rectangle (rounded)
+    ctx.fillStyle = 'white';
+    rr(ctx, ep.x-w, ep.y-h, w*2, h*2, 2.5);
+    ctx.fill();
+    ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 1;
+    rr(ctx, ep.x-w, ep.y-h, w*2, h*2, 2.5);
+    ctx.stroke();
+
+    // dark pupil
+    const pr = Math.min(w,h)*0.62;
+    ctx.fillStyle = '#111';
+    ctx.beginPath(); ctx.arc(ep.x, ep.y, pr, 0, Math.PI*2); ctx.fill();
+
+    // glint
+    ctx.fillStyle = 'rgba(255,255,255,0.88)';
+    ctx.beginPath(); ctx.arc(ep.x+w*0.22, ep.y-h*0.25, pr*0.4, 0, Math.PI*2); ctx.fill();
+  }
+}
+
+// Smile arc — positioned on the "face side" (same quadrant as eyes)
+function drawSmile(ox, oy, cellSz, dir){
+  let cx, cy, startA, endA;
+  const r = cellSz * 0.10;
+  if(dir.x===1){
+    cx=ox+cellSz*0.82; cy=oy+cellSz*0.80; startA=0.1*Math.PI; endA=0.9*Math.PI;
+  } else if(dir.x===-1){
+    cx=ox+cellSz*0.18; cy=oy+cellSz*0.80; startA=0.1*Math.PI; endA=0.9*Math.PI;
+  } else if(dir.y===-1){
+    cx=ox+cellSz*0.50; cy=oy+cellSz*0.35; startA=0.1*Math.PI; endA=0.9*Math.PI;
+  } else {
+    cx=ox+cellSz*0.50; cy=oy+cellSz*0.65; startA=0.1*Math.PI; endA=0.9*Math.PI;
+  }
+  ctx.strokeStyle = '#333'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(cx, cy, r, startA, endA); ctx.stroke();
+}
+
+function drawHead(gx, gy, num, dir){
+  const cell = C();
+  const b = blk(num);
+  const pad = 2;
+  const px = gx*cell + pad, py = gy*cell + pad, sz = cell - pad*2;
+
+  ctx.shadowColor = b.c; ctx.shadowBlur = 16;
+  drawNBBlock(px, py, sz, b, 10);
+  ctx.shadowBlur = 0;
+
+  // number — large, centered, white with dark outline
+  const fs = num >= 10 ? Math.round(cell*0.34) : Math.round(cell*0.44);
+  ctx.font = `bold ${fs}px "Arial Rounded MT Bold",Arial`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.strokeStyle = b.dk; ctx.lineWidth = 3;
+  ctx.strokeText(String(num), gx*cell+cell/2, gy*cell+cell/2+1);
+  ctx.fillStyle = 'white';
+  ctx.fillText(String(num), gx*cell+cell/2, gy*cell+cell/2+1);
+
+  // Numberblocks rectangular eyes
+  drawNBEyes(gx*cell, gy*cell, cell, dir);
+  // smile
+  drawSmile(gx*cell, gy*cell, cell, dir);
+}
+
+function drawBody(gx, gy, num, idx, total){
+  const cell = C();
+  const b = blk(num);
+  const fade = Math.max(0.38, 1 - idx/(total+3));
+  const pad = 4;
+  const px = gx*cell+pad, py = gy*cell+pad, sz = cell-pad*2;
+  ctx.globalAlpha = fade;
+  drawNBBlock(px, py, sz, b, 7);
+  ctx.globalAlpha = 1;
+}
+
+function drawFood(gx, gy, nextNum){
+  const cell = C();
+  const b = blk(nextNum);
+  const t = Date.now()/480;
+  const pulse = 1 + Math.sin(t)*0.09;
+  const sz = cell * 0.72 * pulse;
+  const off = (cell - sz)/2;
+  const px = gx*cell+off, py = gy*cell+off;
+
+  ctx.shadowColor = b.c; ctx.shadowBlur = 22;
+  drawNBBlock(px, py, sz, b, 9);
+  ctx.shadowBlur = 0;
+
+  // number on food
+  const fs = nextNum >= 10 ? Math.round(cell*0.30) : Math.round(cell*0.36);
+  ctx.font = `bold ${fs}px "Arial Rounded MT Bold",Arial`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.strokeStyle = b.dk; ctx.lineWidth = 2.5;
+  ctx.strokeText(String(nextNum), gx*cell+cell/2, gy*cell+cell/2);
+  ctx.fillStyle = 'white';
+  ctx.fillText(String(nextNum), gx*cell+cell/2, gy*cell+cell/2);
 
   // orbiting sparkles
-  for (let i=0; i<4; i++) {
-    const a = t*1.6 + i*Math.PI/2;
-    const r = s/2 + 7;
-    ctx.fillStyle = "white";
+  for(let i=0;i<5;i++){
+    const a = t*1.9 + i*Math.PI*2/5;
+    const r = sz*0.56 + 6;
     ctx.globalAlpha = 0.7 + Math.sin(t*2+i)*0.3;
+    ctx.fillStyle = b.lt;
     ctx.beginPath();
-    ctx.arc(px+C/2+Math.cos(a)*r, py+C/2+Math.sin(a)*r, 3, 0, Math.PI*2);
+    ctx.arc(gx*cell+cell/2+Math.cos(a)*r, gy*cell+cell/2+Math.sin(a)*r, 3, 0, Math.PI*2);
     ctx.fill();
   }
   ctx.globalAlpha = 1;
 }
 
-// ─── full frame ──────────────────────────────────────────────
-function drawFrame() {
-  drawBg();
-  // body (tail → just-before-head)
-  for (let i = snake.length-1; i >= 1; i--) {
-    const fade = Math.max(0.45, 1 - i / (snake.length + 3));
-    drawBlock(snake[i].x, snake[i].y, snake.length, false, dir, fade);
+// ── Particles ─────────────────────────────────────────────
+let parts = [];
+function burst(cx, cy, color, light){
+  for(let i=0;i<22;i++){
+    const a = Math.random()*Math.PI*2;
+    const v = 1.5 + Math.random()*5;
+    parts.push({x:cx,y:cy,vx:Math.cos(a)*v,vy:Math.sin(a)*v-1.2,
+                life:1, sz:3+Math.random()*5, col:Math.random()>.45?color:light});
   }
-  // head
-  drawBlock(snake[0].x, snake[0].y, snake.length, true, dir, 1);
-  // food
-  drawFood(food.x, food.y, snake.length + 1);
-
-  updateParticles();
-  rafId = requestAnimationFrame(drawFrame);
+}
+function tickParts(){
+  ptx.clearRect(0,0,pc.width,pc.height);
+  parts = parts.filter(p=>p.life>0);
+  for(const p of parts){
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.19; p.life-=0.027;
+    ptx.globalAlpha = Math.max(0, p.life*p.life);
+    ptx.fillStyle = p.col;
+    ptx.beginPath(); ptx.arc(p.x,p.y,p.sz*p.life,0,Math.PI*2); ptx.fill();
+  }
+  ptx.globalAlpha=1;
 }
 
-// ─── idle animation ──────────────────────────────────────────
-function drawIdle() {
-  drawBg();
-  // show a sample numberblock 1 in center
-  const C = CELL();
-  drawBlock(Math.floor(GRID/2), Math.floor(GRID/2), 1, true, {x:1,y:0}, 1);
+// ── Audio ─────────────────────────────────────────────────
+let audio = null;
+function getAudio(){
+  if(!audio) audio = new(window.AudioContext||window.webkitAudioContext)();
+  if(audio.state==='suspended') audio.resume();
+  return audio;
+}
+const NOTES = [262,294,330,349,392,440,494,523,587,659];
+function sfxEat(n){
+  try{
+    const a=getAudio(), osc=a.createOscillator(), g=a.createGain();
+    osc.connect(g); g.connect(a.destination);
+    const freq = NOTES[(n-1)%10];
+    osc.type='triangle';
+    osc.frequency.setValueAtTime(freq, a.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(freq*1.6, a.currentTime+0.13);
+    g.gain.setValueAtTime(0.26, a.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, a.currentTime+0.28);
+    osc.start(); osc.stop(a.currentTime+0.3);
+  }catch(e){}
+}
+function sfxDie(){
+  try{
+    const a=getAudio(), osc=a.createOscillator(), g=a.createGain();
+    osc.connect(g); g.connect(a.destination);
+    osc.type='sawtooth';
+    osc.frequency.setValueAtTime(260, a.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(50, a.currentTime+0.65);
+    g.gain.setValueAtTime(0.22, a.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, a.currentTime+0.65);
+    osc.start(); osc.stop(a.currentTime+0.7);
+  }catch(e){}
 }
 
-// ─── game logic ──────────────────────────────────────────────
-function placeFood() {
+// ── Game state ────────────────────────────────────────────
+let snake=[], dir={x:1,y:0}, nextDir={x:1,y:0};
+let food=null, score=0, best=0;
+let running=false, speed=480, lastTick=0, rafId=null;
+
+function placeFood(){
+  const occ = new Set(snake.map(s=>s.x+','+s.y));
   let p;
-  do { p = { x: Math.floor(Math.random()*GRID), y: Math.floor(Math.random()*GRID) }; }
-  while (snake.some(s => s.x===p.x && s.y===p.y));
+  do { p={x:Math.floor(Math.random()*GRID), y:Math.floor(Math.random()*GRID)}; }
+  while(occ.has(p.x+','+p.y));
   food = p;
 }
 
-function updateStatus() {
-  const n    = snake.length;
-  const data = nb(n);
-  const el   = document.getElementById("nb-status");
-  el.textContent  = `넘버블럭 ${n} (${data.name})이에요! 🎉`;
-  el.style.color        = data.color;
-  el.style.borderColor  = data.color;
-  el.style.background   = data.color + "22";
+function updateUI(){
+  const n=snake.length, b=blk(n);
+  document.getElementById('sv').textContent = score;
+  const lbl = document.getElementById('nblabel');
+  lbl.textContent = `넘버블럭 ${n} (${b.name})이에요!`;
+  lbl.style.color = b.c; lbl.style.borderColor = b.c;
+  lbl.style.background = b.c+'15';
 }
 
-function tick() {
-  if (!running) return;
-  dir = { ...nextDir };
+// ── Core tick (no setInterval — driven by RAF timestamps) ─
+function tick(){
+  dir = {...nextDir};
   const head = {
     x: (snake[0].x + dir.x + GRID) % GRID,
     y: (snake[0].y + dir.y + GRID) % GRID,
   };
-  // self collision
-  if (snake.some(s => s.x===head.x && s.y===head.y)) { gameOver(); return; }
+  const willEat = food && head.x===food.x && head.y===food.y;
+
+  // Proper collision: if eating, tail stays → check all segments;
+  // if not eating, tail will move → exclude last segment to avoid false positive
+  const checkLen = willEat ? snake.length : Math.max(0, snake.length-1);
+  for(let i=0;i<checkLen;i++){
+    if(snake[i].x===head.x && snake[i].y===head.y){ gameOver(); return; }
+  }
 
   snake.unshift(head);
-  if (head.x===food.x && head.y===food.y) {
+  if(willEat){
     score++;
-    if (score > best) { best = score; document.getElementById("best-disp").textContent = best; }
-    document.getElementById("score-disp").textContent = score;
-    updateStatus();
-    // particle burst at food center
-    const C = CELL();
-    spawnParticles(food.x*C + C/2, food.y*C + C/2, nb(snake.length).color);
-    playEat(snake.length);
+    if(score>best){ best=score; document.getElementById('bv').textContent=best; }
+    updateUI();
+    const cell=C();
+    burst(food.x*cell+cell/2, food.y*cell+cell/2, blk(snake.length).c, blk(snake.length).lt);
+    sfxEat(snake.length);
     placeFood();
   } else {
     snake.pop();
   }
 }
 
-function gameOver() {
-  running = false;
-  clearInterval(ticker);
-  playDie();
-  // brief flash
-  setTimeout(() => {
-    cancelAnimationFrame(rafId);
-    drawBg();
-    const ov = document.getElementById("overlay");
-    document.getElementById("ov-emoji").textContent  = "😢";
-    document.getElementById("ov-title").style.color  = "#FF5555";
-    document.getElementById("ov-title").textContent  = "게임 오버!";
-    document.getElementById("ov-sub").innerHTML      =
-      `넘버블럭 <b style="color:${nb(snake.length).color}">${snake.length}</b>까지 키웠어요!<br>점수: <b style="color:#FFD700">${score}점</b>`;
-    document.getElementById("start-btn").textContent = "다시하기! 🔄";
-    ov.classList.remove("hidden");
-  }, 200);
+// ── Render ────────────────────────────────────────────────
+function draw(){
+  drawBg();
+  for(let i=snake.length-1;i>=1;i--) drawBody(snake[i].x,snake[i].y,snake.length,i,snake.length);
+  if(snake.length>0) drawHead(snake[0].x,snake[0].y,snake.length,dir);
+  if(food) drawFood(food.x,food.y,snake.length+1);
+  tickParts();
 }
 
-function startGame() {
-  // unlock audio
-  try { getAudio(); } catch(e) {}
+// Single RAF loop — no setInterval, avoids timing conflicts
+function loop(ts){
+  if(!running){ rafId=null; return; }
+  if(ts - lastTick >= speed){
+    lastTick = ts;
+    tick();
+  }
+  if(running){   // tick() may have called gameOver()
+    draw();
+    rafId = requestAnimationFrame(loop);
+  }
+}
 
-  snake   = [{ x: Math.floor(GRID/2), y: Math.floor(GRID/2) }];
-  dir     = { x: 1, y: 0 };
-  nextDir = { x: 1, y: 0 };
-  score   = 0;
-  particles = [];
-  document.getElementById("score-disp").textContent = 0;
-
+// ── Lifecycle ─────────────────────────────────────────────
+function initState(){
+  snake    = [{x:Math.floor(GRID/2), y:Math.floor(GRID/2)}];
+  dir      = {x:1,y:0};
+  nextDir  = {x:1,y:0};
+  score    = 0;
+  parts    = [];
   placeFood();
-  updateStatus();
-
-  document.getElementById("overlay").classList.add("hidden");
-  cancelAnimationFrame(rafId);
-  clearInterval(ticker);
-  running = true;
-  ticker  = setInterval(tick, SPEED);
-  drawFrame();
+  updateUI();
+  document.getElementById('sv').textContent = 0;
 }
 
-// ─── controls ────────────────────────────────────────────────
-function pressDir(dx, dy) {
-  if (!running) return;
-  if (dx + dir.x === 0 && dy + dir.y === 0) return;
-  nextDir = { x: dx, y: dy };
+function startGame(){
+  try{ getAudio(); }catch(e){}
+  if(rafId){ cancelAnimationFrame(rafId); rafId=null; }
+  running = false;
+  initState();
+  document.getElementById('ov').classList.add('hidden');
+  running  = true;
+  lastTick = 0;
+  rafId    = requestAnimationFrame(loop);
 }
 
-document.addEventListener("keydown", e => {
-  const map = {
-    ArrowUp:    [0,-1], ArrowDown: [0,1], ArrowLeft: [-1,0], ArrowRight: [1,0],
-    w:[0,-1], s:[0,1], a:[-1,0], d:[1,0],
+function restartGame(){
+  // Works whether currently playing or on overlay
+  startGame();
+}
+
+function gameOver(){
+  running = false;
+  sfxDie();
+  const n=snake.length, b=blk(n);
+  document.getElementById('oi').textContent = '😢';
+  document.getElementById('ot').style.color  = '#FF5555';
+  document.getElementById('ot').textContent  = '게임 오버!';
+  document.getElementById('od').innerHTML    =
+    `넘버블럭 <b style="color:${b.c}">${n}</b>까지 키웠어요!<br>` +
+    `점수: <b style="color:#FFD700">${score}점</b>`;
+  document.getElementById('startbtn').textContent = '다시하기! 🔄';
+  setTimeout(()=>document.getElementById('ov').classList.remove('hidden'), 110);
+}
+
+// ── Speed control ─────────────────────────────────────────
+const SPD_IDS = {480:'sp0',300:'sp1',160:'sp2'};
+function setSpd(ms){
+  speed = ms;
+  document.querySelectorAll('.spbtn').forEach(b=>b.classList.remove('on'));
+  if(SPD_IDS[ms]) document.getElementById(SPD_IDS[ms]).classList.add('on');
+}
+
+// ── Input ─────────────────────────────────────────────────
+function inp(dx,dy){
+  if(!running) return;
+  if(dx+dir.x===0 && dy+dir.y===0) return; // block 180° reverse
+  nextDir = {x:dx,y:dy};
+}
+
+document.addEventListener('keydown', e=>{
+  const MAP = {
+    ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],
+    w:[0,-1],s:[0,1],a:[-1,0],d:[1,0],
+    W:[0,-1],S:[0,1],A:[-1,0],D:[1,0],
   };
-  const d = map[e.key];
-  if (!d) return;
-  pressDir(d[0], d[1]);
-  if (e.key.startsWith("Arrow")) e.preventDefault();
+  const d=MAP[e.key];
+  if(d){ inp(d[0],d[1]); if(e.key.startsWith('Arrow')) e.preventDefault(); }
 });
 
-// swipe
-let tx0 = null, ty0 = null;
-document.addEventListener("touchstart", e => {
-  tx0 = e.touches[0].clientX;
-  ty0 = e.touches[0].clientY;
-}, { passive: true });
-document.addEventListener("touchend", e => {
-  if (tx0 === null) return;
-  const dx = e.changedTouches[0].clientX - tx0;
-  const dy = e.changedTouches[0].clientY - ty0;
-  if (Math.abs(dx) > Math.abs(dy)) pressDir(dx > 0 ? 1 : -1, 0);
-  else pressDir(0, dy > 0 ? 1 : -1);
-  tx0 = ty0 = null;
-}, { passive: true });
+let swp=null;
+document.addEventListener('touchstart',e=>{
+  swp={x:e.touches[0].clientX, y:e.touches[0].clientY};
+},{passive:true});
+document.addEventListener('touchend',e=>{
+  if(!swp) return;
+  const dx=e.changedTouches[0].clientX-swp.x;
+  const dy=e.changedTouches[0].clientY-swp.y;
+  if(Math.abs(dx)<12&&Math.abs(dy)<12){swp=null;return;}
+  Math.abs(dx)>Math.abs(dy) ? inp(dx>0?1:-1,0) : inp(0,dy>0?1:-1);
+  swp=null;
+},{passive:true});
 
-// ─── initial render ──────────────────────────────────────────
-drawIdle();
+// ── Boot ──────────────────────────────────────────────────
+drawBg();
 </script>
 </body>
 </html>
