@@ -92,77 +92,125 @@ canvas{display:block;}
 <div class="hint">키보드 방향키 · 화면 버튼 · 스와이프로 조종</div>
 
 <script>
-// ── Numberblocks colours ──────────────────────────────────
-const GRID = 14;
-const NB = [
+// ── Numberblocks palette ──────────────────────────────────
+// c       = main fill colour (used for shadow, particles)
+// dk      = dark shade (border, number stroke)
+// lt      = light shade (sparkles)
+// numCol  = override text colour on the block (default white)
+// rainbow = true → use ROYGBIV gradient fill
+const GRID=14;
+const NB=[
   null,
-  {c:'#EE2222',dk:'#990000',lt:'#FFB8B8',name:'하나'},
-  {c:'#FF8C00',dk:'#BB5500',lt:'#FFDDA0',name:'둘'},
-  {c:'#FFD700',dk:'#AA8800',lt:'#FFF5A0',name:'셋'},
-  {c:'#33BB33',dk:'#116611',lt:'#AAFFAA',name:'넷'},
-  {c:'#3344EE',dk:'#1122AA',lt:'#AABBFF',name:'다섯'},
-  {c:'#9922BB',dk:'#660088',lt:'#DDAAFF',name:'여섯'},
-  {c:'#EE1188',dk:'#AA0055',lt:'#FFAAD4',name:'일곱'},
-  {c:'#FFAA00',dk:'#BB7700',lt:'#FFEAAA',name:'여덟'},
-  {c:'#00AABB',dk:'#006677',lt:'#AAEEFF',name:'아홉'},
-  {c:'#FF6633',dk:'#BB3300',lt:'#FFCCAA',name:'열'},
+  {c:'#EE2222',dk:'#990000',lt:'#FFB8B8',name:'하나'},           // 1  red
+  {c:'#FF8C00',dk:'#BB5500',lt:'#FFDDA0',name:'둘'},             // 2  orange
+  {c:'#FFD700',dk:'#AA8800',lt:'#FFF5A0',name:'셋'},             // 3  yellow
+  {c:'#33BB33',dk:'#116611',lt:'#AAFFAA',name:'넷'},             // 4  green
+  {c:'#3344EE',dk:'#1122AA',lt:'#AABBFF',name:'다섯'},           // 5  blue
+  {c:'#9922BB',dk:'#660088',lt:'#DDAAFF',name:'여섯'},           // 6  purple
+  {c:'#FF8800',dk:'#333',   lt:'#FFFFFF',name:'일곱',rainbow:true}, // 7  rainbow
+  {c:'#5500AA',dk:'#330066',lt:'#BB88FF',name:'여덟'},           // 8  deep purple
+  {c:'#888888',dk:'#444444',lt:'#CCCCCC',name:'아홉'},           // 9  gray
+  {c:'#FFFFFF',dk:'#CC0000',lt:'#FFAAAA',name:'열',numCol:'#CC0000'}, // 10 white+red
 ];
-function nb(n){ return NB[((n-1)%10)+1]; }
+// Rainbow body colours (each segment cycles through ROYGBIV)
+const RAINBOW=['#FF0000','#FF8800','#FFFF00','#00BB00','#0055FF','#8800CC','#FF0088'];
+function nb(n){return NB[((n-1)%10)+1];}
+function dispNum(n){return((n-1)%10)+1;} // display number 1-10 cycling
 
 // ── Canvas ────────────────────────────────────────────────
-const gc  = document.getElementById('gc');
-const pc  = document.getElementById('pc');
-const ctx = gc.getContext('2d');
-const ptx = pc.getContext('2d');
-
+const gc=document.getElementById('gc');
+const pc=document.getElementById('pc');
+const ctx=gc.getContext('2d');
+const ptx=pc.getContext('2d');
 function resizeCanvas(){
-  const W    = Math.min(window.innerWidth * 0.96, 560);
-  const cell = Math.floor(W / GRID);
-  const side = cell * GRID;
-  gc.width = gc.height = pc.width = pc.height = side;
-  gc.style.width = gc.style.height = pc.style.width = pc.style.height = side+'px';
+  const W=Math.min(window.innerWidth*.96,560);
+  const cell=Math.floor(W/GRID);
+  const side=cell*GRID;
+  gc.width=gc.height=pc.width=pc.height=side;
+  gc.style.width=gc.style.height=pc.style.width=pc.style.height=side+'px';
 }
 resizeCanvas();
-window.addEventListener('resize', resizeCanvas);
-function CS(){ return gc.width / GRID; }
+window.addEventListener('resize',resizeCanvas);
+function CS(){return gc.width/GRID;}
 
 // ── Drawing helpers ───────────────────────────────────────
 function rr(cx,x,y,w,h,r){
-  if(w<=0||h<=0) return;
+  if(w<=0||h<=0)return;
   r=Math.min(r,w/2,h/2);
   cx.beginPath();
-  cx.moveTo(x+r,y); cx.lineTo(x+w-r,y); cx.arcTo(x+w,y,x+w,y+r,r);
-  cx.lineTo(x+w,y+h-r); cx.arcTo(x+w,y+h,x+w-r,y+h,r);
-  cx.lineTo(x+r,y+h); cx.arcTo(x,y+h,x,y+h-r,r);
-  cx.lineTo(x,y+r); cx.arcTo(x,y,x+r,y,r);
+  cx.moveTo(x+r,y);cx.lineTo(x+w-r,y);cx.arcTo(x+w,y,x+w,y+r,r);
+  cx.lineTo(x+w,y+h-r);cx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  cx.lineTo(x+r,y+h);cx.arcTo(x,y+h,x,y+h-r,r);
+  cx.lineTo(x,y+r);cx.arcTo(x,y,x+r,y,r);
   cx.closePath();
 }
 
-function drawBlock(x,y,sz,b,rad){
-  ctx.fillStyle=b.c; rr(ctx,x,y,sz,sz,rad); ctx.fill();
-  const sh=ctx.createLinearGradient(x,y,x+sz*.7,y+sz*.7);
-  sh.addColorStop(0,'rgba(255,255,255,.45)');
-  sh.addColorStop(.5,'rgba(255,255,255,.06)');
-  sh.addColorStop(1,'rgba(255,255,255,0)');
-  ctx.fillStyle=sh; rr(ctx,x,y,sz,sz,rad); ctx.fill();
-  if(sz*.2>0){ ctx.fillStyle=b.dk+'99'; rr(ctx,x,y+sz*.8,sz,sz*.2,Math.min(rad,sz*.1)); ctx.fill(); }
-  ctx.strokeStyle=b.dk; ctx.lineWidth=2; rr(ctx,x,y,sz,sz,rad); ctx.stroke();
+// Draw a Numberblocks square block.
+// b = NB entry; solidCol = optional override fill (string) for rainbow body segments
+function drawBlock(x,y,sz,b,rad,solidCol){
+  if(sz<=0)return;
+  // Fill
+  if(solidCol){
+    ctx.fillStyle=solidCol;
+  }else if(b.rainbow){
+    const rg=ctx.createLinearGradient(x,y,x+sz,y+sz);
+    rg.addColorStop(0,   '#FF0000');
+    rg.addColorStop(0.17,'#FF8800');
+    rg.addColorStop(0.33,'#FFFF00');
+    rg.addColorStop(0.50,'#00BB00');
+    rg.addColorStop(0.67,'#0055FF');
+    rg.addColorStop(0.83,'#8800CC');
+    rg.addColorStop(1,   '#FF0088');
+    ctx.fillStyle=rg;
+  }else{
+    ctx.fillStyle=b.c;
+  }
+  rr(ctx,x,y,sz,sz,rad);ctx.fill();
+
+  // Diagonal shine (skip for white background – already bright)
+  if(b.c!=='#FFFFFF'&&!solidCol){
+    const sh=ctx.createLinearGradient(x,y,x+sz*.7,y+sz*.7);
+    sh.addColorStop(0,'rgba(255,255,255,.45)');
+    sh.addColorStop(.5,'rgba(255,255,255,.06)');
+    sh.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=sh;rr(ctx,x,y,sz,sz,rad);ctx.fill();
+  }else if(solidCol){
+    // light shine for rainbow body
+    const sh=ctx.createLinearGradient(x,y,x+sz*.7,y+sz*.7);
+    sh.addColorStop(0,'rgba(255,255,255,.38)');
+    sh.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=sh;rr(ctx,x,y,sz,sz,rad);ctx.fill();
+  }
+
+  // Bottom-edge shadow (3-D feel) — not for white/rainbow-body
+  const useShadow=!solidCol&&b.c!=='#FFFFFF'&&!b.rainbow;
+  if(useShadow&&sz*.2>0){
+    ctx.fillStyle=b.dk+'99';
+    rr(ctx,x,y+sz*.8,sz,sz*.2,Math.min(rad,sz*.1));
+    ctx.fill();
+  }
+
+  // Border
+  const bw=b.numCol?3:2; // thicker red border for #10
+  ctx.strokeStyle=solidCol?'rgba(0,0,0,.25)':b.dk;
+  ctx.lineWidth=bw;
+  rr(ctx,x,y,sz,sz,rad);ctx.stroke();
 }
 
 function drawEyes(ox,oy,C,d){
-  const ew=C*.12, eh=C*.2;
+  const ew=C*.12,eh=C*.2;
   let p1,p2,w,h;
   if(d.x===1)      {p1={x:ox+C*.83,y:oy+C*.28};p2={x:ox+C*.83,y:oy+C*.64};w=ew;h=eh;}
   else if(d.x===-1){p1={x:ox+C*.17,y:oy+C*.28};p2={x:ox+C*.17,y:oy+C*.64};w=ew;h=eh;}
   else if(d.y===-1){p1={x:ox+C*.27,y:oy+C*.17};p2={x:ox+C*.66,y:oy+C*.17};w=eh;h=ew;}
   else             {p1={x:ox+C*.27,y:oy+C*.83};p2={x:ox+C*.66,y:oy+C*.83};w=eh;h=ew;}
   for(const e of[p1,p2]){
-    ctx.fillStyle='white'; rr(ctx,e.x-w,e.y-h,w*2,h*2,3); ctx.fill();
-    ctx.strokeStyle='#222'; ctx.lineWidth=1; rr(ctx,e.x-w,e.y-h,w*2,h*2,3); ctx.stroke();
+    ctx.fillStyle='white';rr(ctx,e.x-w,e.y-h,w*2,h*2,3);ctx.fill();
+    ctx.strokeStyle='#333';ctx.lineWidth=1;rr(ctx,e.x-w,e.y-h,w*2,h*2,3);ctx.stroke();
     const pr=Math.min(w,h)*.65;
-    ctx.fillStyle='#111'; ctx.beginPath(); ctx.arc(e.x,e.y,pr,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#111';ctx.beginPath();ctx.arc(e.x,e.y,pr,0,Math.PI*2);ctx.fill();
     ctx.fillStyle='rgba(255,255,255,.9)';
-    ctx.beginPath(); ctx.arc(e.x+w*.22,e.y-h*.24,pr*.42,0,Math.PI*2); ctx.fill();
+    ctx.beginPath();ctx.arc(e.x+w*.22,e.y-h*.24,pr*.42,0,Math.PI*2);ctx.fill();
   }
 }
 
@@ -172,72 +220,113 @@ function drawSmile(ox,oy,C,d){
   else if(d.x===-1){cx=ox+C*.17;cy=oy+C*.84;}
   else if(d.y===-1){cx=ox+C*.5; cy=oy+C*.36;}
   else             {cx=ox+C*.5; cy=oy+C*.64;}
-  ctx.strokeStyle='#333'; ctx.lineWidth=1.8;
-  ctx.beginPath(); ctx.arc(cx,cy,C*.09,.1*Math.PI,.9*Math.PI); ctx.stroke();
+  ctx.strokeStyle='#333';ctx.lineWidth=1.8;
+  ctx.beginPath();ctx.arc(cx,cy,C*.09,.1*Math.PI,.9*Math.PI);ctx.stroke();
 }
 
 function drawHead(gx,gy,num,d){
-  const C=CS(), b=nb(num), px=gx*C+2, py=gy*C+2, sz=C-4;
-  ctx.shadowColor=b.c; ctx.shadowBlur=14;
+  const C=CS(),b=nb(num),px=gx*C+2,py=gy*C+2,sz=C-4;
+  const dn=dispNum(num);
+  ctx.shadowColor=b.c;ctx.shadowBlur=14;
   drawBlock(px,py,sz,b,10);
   ctx.shadowBlur=0;
-  const fs=num>=10?Math.round(C*.36):Math.round(C*.44);
+  const fs=dn>=10?Math.round(C*.34):Math.round(C*.44);
   ctx.font=`bold ${fs}px "Arial Rounded MT Bold",Arial`;
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.strokeStyle=b.dk; ctx.lineWidth=3;
-  ctx.strokeText(String(num),gx*C+C/2,gy*C+C/2+1);
-  ctx.fillStyle='white'; ctx.fillText(String(num),gx*C+C/2,gy*C+C/2+1);
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  const numFill=b.numCol||'white';
+  const numStroke=b.rainbow?'#222':b.dk;
+  ctx.strokeStyle=numStroke;ctx.lineWidth=3;
+  ctx.strokeText(String(dn),gx*C+C/2,gy*C+C/2+1);
+  ctx.fillStyle=numFill;ctx.fillText(String(dn),gx*C+C/2,gy*C+C/2+1);
   drawEyes(gx*C,gy*C,C,d);
   drawSmile(gx*C,gy*C,C,d);
 }
 
-function drawBody(gx,gy,num,idx,total){
-  const C=CS(), b=nb(num), fade=Math.max(.35,1-idx/(total+4));
-  const px=gx*C+4, py=gy*C+4, sz=C-8;
-  if(sz<=0) return;
+function drawBodySeg(gx,gy,num,idx,total){
+  const C=CS(),b=nb(num);
+  const fade=Math.max(.35,1-idx/(total+4));
+  const px=gx*C+4,py=gy*C+4,sz=C-8;
+  if(sz<=0)return;
   ctx.globalAlpha=fade;
-  drawBlock(px,py,sz,b,7);
+  // Rainbow snake: each body segment cycles through ROYGBIV
+  const solidCol=b.rainbow?RAINBOW[idx%RAINBOW.length]:null;
+  drawBlock(px,py,sz,b,7,solidCol);
   ctx.globalAlpha=1;
 }
 
 function drawFood(gx,gy,nextNum){
-  const C=CS(), b=nb(nextNum), t=Date.now()/500;
-  const pulse=1+Math.sin(t)*.09, sz=C*.70*pulse, off=(C-sz)/2;
-  ctx.shadowColor=b.c; ctx.shadowBlur=20;
+  const C=CS(),b=nb(nextNum),dn=dispNum(nextNum);
+  const t=Date.now()/500,pulse=1+Math.sin(t)*.09;
+  const sz=C*.70*pulse,off=(C-sz)/2;
+  ctx.shadowColor=b.c;ctx.shadowBlur=20;
   drawBlock(gx*C+off,gy*C+off,sz,b,9);
   ctx.shadowBlur=0;
-  const fs=nextNum>=10?Math.round(C*.30):Math.round(C*.36);
+  const fs=dn>=10?Math.round(C*.28):Math.round(C*.34);
   ctx.font=`bold ${fs}px "Arial Rounded MT Bold",Arial`;
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.strokeStyle=b.dk; ctx.lineWidth=2.5;
-  ctx.strokeText(String(nextNum),gx*C+C/2,gy*C+C/2);
-  ctx.fillStyle='white'; ctx.fillText(String(nextNum),gx*C+C/2,gy*C+C/2);
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  const numFill=b.numCol||'white';
+  ctx.strokeStyle=b.rainbow?'#222':b.dk;ctx.lineWidth=2.5;
+  ctx.strokeText(String(dn),gx*C+C/2,gy*C+C/2);
+  ctx.fillStyle=numFill;ctx.fillText(String(dn),gx*C+C/2,gy*C+C/2);
+  // Orbiting sparkles
   for(let i=0;i<5;i++){
-    const a=t*1.9+i*Math.PI*2/5, r=sz*.55+6;
+    const a=t*1.9+i*Math.PI*2/5,r=sz*.55+6;
+    const sparkCol=b.rainbow?RAINBOW[i%RAINBOW.length]:b.lt;
     ctx.globalAlpha=.6+Math.sin(t*2+i)*.4;
-    ctx.fillStyle=b.lt;
-    ctx.beginPath(); ctx.arc(gx*C+C/2+Math.cos(a)*r,gy*C+C/2+Math.sin(a)*r,2.5,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=sparkCol;
+    ctx.beginPath();ctx.arc(gx*C+C/2+Math.cos(a)*r,gy*C+C/2+Math.sin(a)*r,2.5,0,Math.PI*2);ctx.fill();
   }
   ctx.globalAlpha=1;
+}
+
+function drawObstacle(gx,gy){
+  const C=CS(),px=gx*C+1,py=gy*C+1,sz=C-2;
+  if(sz<=0)return;
+  // Dark background
+  ctx.fillStyle='#1A1A1A';rr(ctx,px,py,sz,sz,5);ctx.fill();
+  // Diagonal warning stripes (clipped to block shape)
+  ctx.save();
+  ctx.beginPath();rr(ctx,px,py,sz,sz,5);ctx.clip();
+  ctx.strokeStyle='rgba(255,70,0,.22)';ctx.lineWidth=5;
+  for(let i=-sz;i<sz*2;i+=9){
+    ctx.beginPath();ctx.moveTo(px+i,py);ctx.lineTo(px+i+sz,py+sz);ctx.stroke();
+  }
+  ctx.restore();
+  // Orange border
+  ctx.strokeStyle='#FF4400';ctx.lineWidth=2;rr(ctx,px,py,sz,sz,5);ctx.stroke();
+  // X mark
+  const m=Math.max(6,sz*.22);
+  ctx.strokeStyle='#FF6633';ctx.lineWidth=2.5;
+  ctx.beginPath();
+  ctx.moveTo(px+m,py+m);ctx.lineTo(px+sz-m,py+sz-m);
+  ctx.moveTo(px+sz-m,py+m);ctx.lineTo(px+m,py+sz-m);
+  ctx.stroke();
 }
 
 // ── Particles ─────────────────────────────────────────────
 let parts=[];
 function burst(cx,cy,col,lt){
   for(let i=0;i<18;i++){
-    const a=Math.random()*Math.PI*2, v=1.5+Math.random()*5;
+    const a=Math.random()*Math.PI*2,v=1.5+Math.random()*5;
+    const c=Math.random()>.45?col:lt;
+    parts.push({x:cx,y:cy,vx:Math.cos(a)*v,vy:Math.sin(a)*v-1.2,life:1,sz:3+Math.random()*5,col:c});
+  }
+}
+function burstRainbow(cx,cy){
+  for(let i=0;i<22;i++){
+    const a=Math.random()*Math.PI*2,v=2+Math.random()*5;
     parts.push({x:cx,y:cy,vx:Math.cos(a)*v,vy:Math.sin(a)*v-1.2,
-               life:1,sz:3+Math.random()*5,col:Math.random()>.45?col:lt});
+               life:1,sz:3+Math.random()*5,col:RAINBOW[i%RAINBOW.length]});
   }
 }
 function tickParts(){
   ptx.clearRect(0,0,pc.width,pc.height);
-  parts=parts.filter(p=>p.life>0.01);
+  parts=parts.filter(p=>p.life>.01);
   for(const p of parts){
-    p.x+=p.vx; p.y+=p.vy; p.vy+=.18; p.life-=.028;
+    p.x+=p.vx;p.y+=p.vy;p.vy+=.18;p.life-=.028;
     ptx.globalAlpha=Math.max(0,p.life*p.life);
     ptx.fillStyle=p.col;
-    ptx.beginPath(); ptx.arc(p.x,p.y,p.sz*p.life,0,Math.PI*2); ptx.fill();
+    ptx.beginPath();ptx.arc(p.x,p.y,p.sz*p.life,0,Math.PI*2);ptx.fill();
   }
   ptx.globalAlpha=1;
 }
@@ -245,84 +334,120 @@ function tickParts(){
 // ── Audio ─────────────────────────────────────────────────
 let actx=null;
 function getAudio(){
-  if(!actx) actx=new(window.AudioContext||window.webkitAudioContext)();
-  if(actx.state==='suspended') actx.resume();
+  if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();
+  if(actx.state==='suspended')actx.resume();
   return actx;
 }
 const NOTES=[262,294,330,349,392,440,494,523,587,659];
 function sfxEat(n){
   try{
     const a=getAudio(),osc=a.createOscillator(),g=a.createGain();
-    osc.connect(g); g.connect(a.destination);
+    osc.connect(g);g.connect(a.destination);
     osc.type='triangle';
     const f=NOTES[(n-1)%10];
     osc.frequency.setValueAtTime(f,a.currentTime);
     osc.frequency.exponentialRampToValueAtTime(f*1.6,a.currentTime+.12);
     g.gain.setValueAtTime(.25,a.currentTime);
     g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.28);
-    osc.start(a.currentTime); osc.stop(a.currentTime+.3);
+    osc.start(a.currentTime);osc.stop(a.currentTime+.3);
+  }catch(e){}
+}
+function sfxCut(){
+  try{
+    const a=getAudio(),osc=a.createOscillator(),g=a.createGain();
+    osc.connect(g);g.connect(a.destination);
+    osc.type='square';
+    osc.frequency.setValueAtTime(300,a.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(80,a.currentTime+.2);
+    g.gain.setValueAtTime(.18,a.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.22);
+    osc.start(a.currentTime);osc.stop(a.currentTime+.25);
   }catch(e){}
 }
 function sfxDie(){
   try{
     const a=getAudio(),osc=a.createOscillator(),g=a.createGain();
-    osc.connect(g); g.connect(a.destination);
+    osc.connect(g);g.connect(a.destination);
     osc.type='sawtooth';
     osc.frequency.setValueAtTime(260,a.currentTime);
     osc.frequency.exponentialRampToValueAtTime(50,a.currentTime+.6);
     g.gain.setValueAtTime(.22,a.currentTime);
     g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.6);
-    osc.start(a.currentTime); osc.stop(a.currentTime+.65);
+    osc.start(a.currentTime);osc.stop(a.currentTime+.65);
   }catch(e){}
 }
 
 // ── Game state ────────────────────────────────────────────
-let snake=[], dir={x:1,y:0}, nextDir={x:1,y:0};
-let food=null, score=0, best=0;
-let running=false, speed=480;
+let snake=[],dir={x:1,y:0},nextDir={x:1,y:0};
+let food=null,score=0,best=0;
+let running=false,speed=480;
+let obstacles=[];
 
-// ── Food placement ────────────────────────────────────────
+// ── Placement helpers ─────────────────────────────────────
+function occupied(){
+  const s=new Set(snake.map(p=>p.x+','+p.y));
+  obstacles.forEach(o=>s.add(o.x+','+o.y));
+  return s;
+}
+function randomPos(occ){
+  let p,t=0;
+  do{p={x:Math.floor(Math.random()*GRID),y:Math.floor(Math.random()*GRID)};t++;}
+  while(occ.has(p.x+','+p.y)&&t<500);
+  return occ.has(p.x+','+p.y)?null:p;
+}
 function randomFood(){
-  const occ=new Set(snake.map(s=>s.x+','+s.y));
-  let p,tries=0;
-  do{
-    p={x:Math.floor(Math.random()*GRID),y:Math.floor(Math.random()*GRID)};
-    tries++;
-  }while(occ.has(p.x+','+p.y)&&tries<500);
-  return p;
+  const occ=occupied();
+  if(food)occ.add(food.x+','+food.y);
+  return randomPos(occ)||{x:0,y:0};
+}
+function addObstacle(){
+  const occ=occupied();
+  if(food)occ.add(food.x+','+food.y);
+  const p=randomPos(occ);
+  if(p)obstacles.push(p);
 }
 
 // ── Label ─────────────────────────────────────────────────
 function updateLabel(){
-  const n=snake.length, b=nb(n), lbl=document.getElementById('nblabel');
-  lbl.textContent=`넘버블럭 ${n} (${b.name})이에요!`;
-  lbl.style.color=b.c; lbl.style.borderColor=b.c;
-  lbl.style.background=b.c+'18';
+  const n=snake.length,b=nb(n),dn=dispNum(n);
+  const lbl=document.getElementById('nblabel');
+  lbl.textContent=`넘버블럭 ${dn} (${b.name})이에요!`;
+  const col=b.rainbow?'#FF8800':(b.numCol||b.c);
+  lbl.style.color=col;lbl.style.borderColor=col;
+  lbl.style.background=col.startsWith('#')?col+'18':'rgba(128,128,128,.11)';
 }
 
 // ── Game tick ─────────────────────────────────────────────
 function gameTick(){
-  // Apply queued direction
   dir={x:nextDir.x,y:nextDir.y};
-
-  // New head position (wrap-around)
   const hx=(snake[0].x+dir.x+GRID)%GRID;
   const hy=(snake[0].y+dir.y+GRID)%GRID;
 
-  // Self-collision: check all segments except the tail
-  // (tail will vacate this tick; food is never on a snake cell so this is always safe)
+  // ① Obstacle collision → game over
+  for(const obs of obstacles){
+    if(obs.x===hx&&obs.y===hy){endGame();return;}
+  }
+
+  // ② Self-collision → shorten (cut from hit point, keep head + segments before it)
   for(let i=0;i<snake.length-1;i++){
     if(snake[i].x===hx&&snake[i].y===hy){
-      endGame();
+      // Add new head, then truncate at collision index
+      snake.unshift({x:hx,y:hy});
+      snake.length=Math.max(1,i+1);
+      updateLabel();
+      sfxCut();
+      // Small cut-particle burst
+      const C=CS(),b=nb(snake.length);
+      if(b.rainbow)burstRainbow(hx*C+C/2,hy*C+C/2);
+      else burst(hx*C+C/2,hy*C+C/2,b.c,b.lt);
       return;
     }
   }
 
+  // ③ Normal move
   const eating=(food!==null&&hx===food.x&&hy===food.y);
-
-  // Move
   snake.unshift({x:hx,y:hy});
-  if(!eating) snake.pop();
+  if(!eating)snake.pop();
 
   if(eating){
     score++;
@@ -331,10 +456,12 @@ function gameTick(){
     document.getElementById('bv').textContent=best;
     updateLabel();
     food=randomFood();
-    const C=CS();
-    const b=nb(snake.length);
-    burst(hx*C+C/2,hy*C+C/2,b.c,b.lt);
+    const C=CS(),b=nb(snake.length);
+    if(b.rainbow)burstRainbow(hx*C+C/2,hy*C+C/2);
+    else burst(hx*C+C/2,hy*C+C/2,b.c,b.lt);
     sfxEat(snake.length);
+    // Spawn an obstacle every 3 foods, cap at 10
+    if(score>0&&score%3===0&&obstacles.length<10)addObstacle();
   }
 }
 
@@ -342,78 +469,68 @@ function gameTick(){
 function draw(){
   const s=gc.width;
   const g=ctx.createLinearGradient(0,0,s,s);
-  g.addColorStop(0,'#0e1828'); g.addColorStop(1,'#190830');
-  ctx.fillStyle=g; ctx.fillRect(0,0,s,s);
+  g.addColorStop(0,'#0e1828');g.addColorStop(1,'#190830');
+  ctx.fillStyle=g;ctx.fillRect(0,0,s,s);
   const C=CS();
-  ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=1;
+  ctx.strokeStyle='rgba(255,255,255,0.04)';ctx.lineWidth=1;
   for(let i=0;i<=GRID;i++){
-    ctx.beginPath(); ctx.moveTo(i*C,0); ctx.lineTo(i*C,s); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,i*C); ctx.lineTo(s,i*C); ctx.stroke();
+    ctx.beginPath();ctx.moveTo(i*C,0);ctx.lineTo(i*C,s);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,i*C);ctx.lineTo(s,i*C);ctx.stroke();
   }
-  for(let i=snake.length-1;i>=1;i--) drawBody(snake[i].x,snake[i].y,snake.length,i,snake.length);
-  if(snake.length>0) drawHead(snake[0].x,snake[0].y,snake.length,dir);
-  if(food) drawFood(food.x,food.y,snake.length+1);
+  // Obstacles first (below snake)
+  for(const obs of obstacles)drawObstacle(obs.x,obs.y);
+  // Body (tail-first so head draws on top)
+  for(let i=snake.length-1;i>=1;i--)drawBodySeg(snake[i].x,snake[i].y,snake.length,i,snake.length);
+  // Head
+  if(snake.length>0)drawHead(snake[0].x,snake[0].y,snake.length,dir);
+  // Food
+  if(food)drawFood(food.x,food.y,snake.length+1);
   tickParts();
 }
 
-// ── Single RAF loop (always running once started) ─────────
-// Uses accumulator so game speed is independent of frame rate.
-let rafId=null;
-let prevTs=0;
-let lag=0;
+// ── RAF loop ──────────────────────────────────────────────
+let rafId=null,prevTs=0,lag=0;
 
 function frame(ts){
-  // First frame: just record time, don't accumulate
   if(prevTs!==0){
-    const dt=Math.min(ts-prevTs,250); // cap prevents giant jump after tab switch
+    const dt=Math.min(ts-prevTs,250);
     if(running){
       lag+=dt;
-      // Drain accumulated time in fixed steps
-      while(lag>=speed){
-        lag-=speed;
-        gameTick();
-        if(!running){ lag=0; break; }
-      }
+      while(lag>=speed){lag-=speed;gameTick();if(!running){lag=0;break;}}
     }
   }
   prevTs=ts;
-
-  try{ draw(); }catch(e){ console.error('draw:',e); }
-
+  try{draw();}catch(e){console.error('draw:',e);}
   rafId=requestAnimationFrame(frame);
 }
-
 function startLoop(){
-  if(rafId!==null){ cancelAnimationFrame(rafId); rafId=null; }
-  prevTs=0;
-  lag=0;
+  if(rafId!==null){cancelAnimationFrame(rafId);rafId=null;}
+  prevTs=0;lag=0;
   rafId=requestAnimationFrame(frame);
 }
 
 // ── Game over ─────────────────────────────────────────────
 function endGame(){
-  running=false;
-  lag=0;
+  running=false;lag=0;
   sfxDie();
-  const n=snake.length, b=nb(n);
+  const n=snake.length,b=nb(n),dn=dispNum(n);
   document.getElementById('oi').textContent='😢';
   document.getElementById('ot').style.color='#FF5555';
   document.getElementById('ot').textContent='게임 오버!';
   document.getElementById('od').innerHTML=
-    `넘버블럭 <b style="color:${b.c}">${n}</b>까지 키웠어요!<br>` +
+    `넘버블럭 <b style="color:${b.c==='#FFFFFF'?'#CC0000':b.c}">${dn}</b>까지 키웠어요!<br>`+
     `점수: <b style="color:#FFD700">${score}점</b>`;
-  setTimeout(()=>{ document.getElementById('ov').classList.remove('hidden'); },150);
+  setTimeout(()=>{document.getElementById('ov').classList.remove('hidden');},150);
 }
 
 // ── Start game ────────────────────────────────────────────
 function startGame(){
-  try{ getAudio(); }catch(e){}
-
-  running=false; // pause logic while resetting
+  try{getAudio();}catch(e){}
+  running=false;
   snake=[{x:GRID>>1,y:GRID>>1}];
-  dir={x:1,y:0}; nextDir={x:1,y:0};
-  score=0; parts=[]; food=randomFood();
-
+  dir={x:1,y:0};nextDir={x:1,y:0};
+  score=0;parts=[];obstacles=[];
+  food=randomFood();
   document.getElementById('sv').textContent=0;
   document.getElementById('oi').textContent='🔢';
   document.getElementById('ot').style.color='#FFD700';
@@ -421,48 +538,44 @@ function startGame(){
   document.getElementById('od').innerHTML='숫자 음식을 먹어서 넘버블럭을 키워요!<br>먹을수록 숫자가 커져요 🎉';
   document.getElementById('ov').classList.add('hidden');
   updateLabel();
-
   running=true;
-  startLoop(); // cancel old RAF, start fresh single loop
+  startLoop();
 }
 
 // ── Speed control ─────────────────────────────────────────
 function setSpd(ms){
-  speed=ms;
-  lag=0; // reset accumulator so new speed takes effect immediately
+  speed=ms;lag=0;
   document.querySelectorAll('.spbtn').forEach(b=>b.classList.remove('on'));
-  const ids={480:'sp0',300:'sp1',160:'sp2'};
-  const el=document.getElementById(ids[ms]);
-  if(el) el.classList.add('on');
+  ({480:'sp0',300:'sp1',160:'sp2'}[ms]||'');
+  const el=document.getElementById({480:'sp0',300:'sp1',160:'sp2'}[ms]);
+  if(el)el.classList.add('on');
 }
 
 // ── Input ─────────────────────────────────────────────────
 function inp(dx,dy){
-  if(!running) return;
-  if(dx+dir.x===0&&dy+dir.y===0) return; // block 180° reversal
+  if(!running)return;
+  if(dx+dir.x===0&&dy+dir.y===0)return;
   nextDir={x:dx,y:dy};
 }
-
 document.addEventListener('keydown',e=>{
   const MAP={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],
              w:[0,-1],s:[0,1],a:[-1,0],d:[1,0],W:[0,-1],S:[0,1],A:[-1,0],D:[1,0]};
-  const d=MAP[e.key]; if(!d) return;
+  const d=MAP[e.key];if(!d)return;
   inp(d[0],d[1]);
-  if(e.key.startsWith('Arrow')) e.preventDefault();
+  if(e.key.startsWith('Arrow'))e.preventDefault();
 });
-
 let swp=null;
 document.addEventListener('touchstart',e=>{swp={x:e.touches[0].clientX,y:e.touches[0].clientY};},{passive:true});
 document.addEventListener('touchend',e=>{
-  if(!swp) return;
-  const dx=e.changedTouches[0].clientX-swp.x, dy=e.changedTouches[0].clientY-swp.y;
+  if(!swp)return;
+  const dx=e.changedTouches[0].clientX-swp.x,dy=e.changedTouches[0].clientY-swp.y;
   swp=null;
-  if(Math.abs(dx)<12&&Math.abs(dy)<12) return;
+  if(Math.abs(dx)<12&&Math.abs(dy)<12)return;
   Math.abs(dx)>Math.abs(dy)?inp(dx>0?1:-1,0):inp(0,dy>0?1:-1);
 },{passive:true});
 
 // ── Boot ──────────────────────────────────────────────────
-draw(); // initial background render
+draw();
 </script>
 </body>
 </html>
