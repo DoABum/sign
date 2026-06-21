@@ -324,9 +324,41 @@ export default function GamePage() {
       onTouchEnd={onTouchEnd}
     >
       {/* title */}
-      <h1 style={{ fontFamily: "Arial Rounded MT Bold, Arial", color: "#FFD700", textShadow: "0 0 20px #FFD70088", fontSize: "clamp(1.4rem, 4vw, 2.2rem)", marginBottom: 6 }}>
+      <h1 style={{ fontFamily: "Arial Rounded MT Bold, Arial", color: "#FFD700", textShadow: "0 0 20px #FFD70088", fontSize: "clamp(1.4rem, 4vw, 2.2rem)", marginBottom: 10 }}>
         🔢 넘버블럭스 뱀게임 🐍
       </h1>
+
+      {/* snake game links */}
+      <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap", justifyContent: "center" }}>
+        <a
+          href="/numberblocks-snake.html"
+          style={{
+            background: "linear-gradient(135deg,#22c55e,#16a34a)",
+            color: "white", textDecoration: "none",
+            borderRadius: 24, padding: "10px 22px",
+            fontWeight: "bold", fontSize: "1rem",
+            fontFamily: "Arial Rounded MT Bold, Arial",
+            boxShadow: "0 4px 14px #22c55e88",
+            display: "flex", alignItems: "center", gap: 6,
+          }}
+        >
+          🎮 방향키 모드
+        </a>
+        <a
+          href="/numberblocks-snake-manual.html"
+          style={{
+            background: "linear-gradient(135deg,#3b82f6,#1d4ed8)",
+            color: "white", textDecoration: "none",
+            borderRadius: 24, padding: "10px 22px",
+            fontWeight: "bold", fontSize: "1rem",
+            fontFamily: "Arial Rounded MT Bold, Arial",
+            boxShadow: "0 4px 14px #3b82f688",
+            display: "flex", alignItems: "center", gap: 6,
+          }}
+        >
+          👆 터치 모드
+        </a>
+      </div>
 
       {/* score row */}
       <div style={{ display: "flex", gap: 16, marginBottom: 8 }}>
