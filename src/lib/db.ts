@@ -37,30 +37,6 @@ db.exec(`
     FOREIGN KEY (teacher_id) REFERENCES teachers(id),
     UNIQUE(meeting_id, teacher_id)
   );
-
-  CREATE TABLE IF NOT EXISTS eval_classes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE
-  );
-
-  CREATE TABLE IF NOT EXISTS eval_students (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    class_id INTEGER NOT NULL,
-    number INTEGER,
-    name TEXT NOT NULL,
-    FOREIGN KEY (class_id) REFERENCES eval_classes(id)
-  );
-
-  CREATE TABLE IF NOT EXISTS eval_records (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    student_id INTEGER NOT NULL,
-    competencies TEXT NOT NULL DEFAULT '[]',
-    attitudes TEXT NOT NULL DEFAULT '[]',
-    question_text TEXT,
-    memo TEXT,
-    recorded_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-    FOREIGN KEY (student_id) REFERENCES eval_students(id)
-  );
 `);
 
 // Seed default departments and teachers if empty

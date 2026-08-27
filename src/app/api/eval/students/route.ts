@@ -1,32 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
-import db from "@/lib/db";
+import { sheetsGet, sheetsPost } from "@/lib/sheetsClient";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const classId = searchParams.get("class_id");
+  const classId = searchParams.get("class_id") || undefined;
 
-  const query = classId
-    ? `SELECT s.*, c.name as class_name FROM eval_students s
-       JOIN eval_classes c ON s.class_id = c.id
-       WHERE s.class_id = ? ORDER BY s.number, s.name`
-    : `SELECT s.*, c.name as class_name FROM eval_students s
-       JOIN eval_classes c ON s.class_id = c.id ORDER BY c.name, s.number, s.name`;
-
-  const students = classId ? db.prepare(query).all(classId) : db.prepare(query).all();
-  return NextResponse.json(students);
+  try {
+    const students = await sheetsGet("students", { class_id: classId });
+    return NextResponse.json(students);
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {
   const { name, class_id, number } = await req.json();
   if (!name || !class_id) return NextResponse.json({ error: "이름과 학급 필요" }, { status: 400 });
 
-  const result = db
-    .prepare("INSERT INTO eval_students (name, class_id, number) VALUES (?, ?, ?)")
-    .run(name, class_id, number ?? null);
-  const student = db
-    .prepare("SELECT s.*, c.name as class_name FROM eval_students s JOIN eval_classes c ON s.class_id = c.id WHERE s.id = ?")
-    .get(result.lastInsertRowid);
-  return NextResponse.json(student, { status: 201 });
+  try {
+    const student = await sheetsPost("students", "create", { name, class_id, number: number ?? "" });
+    return NextResponse.json(student, { status: 201 });
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+  }
 }
 
 export async function DELETE(req: NextRequest) {
@@ -34,7 +30,10 @@ export async function DELETE(req: NextRequest) {
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id 필요" }, { status: 400 });
 
-  db.prepare("DELETE FROM eval_records WHERE student_id = ?").run(id);
-  db.prepare("DELETE FROM eval_students WHERE id = ?").run(id);
-  return NextResponse.json({ ok: true });
+  try {
+    await sheetsPost("students", "delete", { id: Number(id) });
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+  }
 }
